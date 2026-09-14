@@ -37,6 +37,7 @@
 #define I2C_PIN_SDA              GPIO_NUM_8
 #define I2C_PIN_SCL              GPIO_NUM_7
 #define I2C_PORT                 I2C_NUM_0
+#define I2C_FREQ_HZ              400000
 #define TOUCH_I2C_ADDRESS        0x15
 
 static const char *TAG = "round_lcd";
@@ -113,7 +114,7 @@ static esp_err_t init_touch(void)
 
     const esp_lcd_panel_io_i2c_config_t io_config = {
         .dev_addr = TOUCH_I2C_ADDRESS,
-        .scl_speed_hz = 400000,
+        .scl_speed_hz = I2C_FREQ_HZ,
         .control_phase_bytes = 1,
         .dc_bit_offset = 0,
         .lcd_cmd_bits = 8,
@@ -153,8 +154,8 @@ static esp_err_t init_lvgl(void)
     const lvgl_port_display_cfg_t display_config = {
         .io_handle = lcd_io,
         .panel_handle = lcd_panel,
-        .buffer_size = LCD_H_RES * 40,
-        .double_buffer = false,
+        .buffer_size = LCD_H_RES * 80,
+        .double_buffer = true,
         .hres = LCD_H_RES,
         .vres = LCD_V_RES,
         .color_format = LV_COLOR_FORMAT_RGB565,

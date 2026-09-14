@@ -33,6 +33,19 @@
 #define LCD_PIN_RST              GPIO_NUM_NC
 #define LCD_PIN_BL               GPIO_NUM_0
 #define LCD_BACKLIGHT_ACTIVE_LEVEL 1
+#define LCD_ROTATION_DEGREES     270
+
+#if LCD_ROTATION_DEGREES == 0
+#define LCD_ROTATION             LV_DISPLAY_ROTATION_0
+#elif LCD_ROTATION_DEGREES == 90
+#define LCD_ROTATION             LV_DISPLAY_ROTATION_90
+#elif LCD_ROTATION_DEGREES == 180
+#define LCD_ROTATION             LV_DISPLAY_ROTATION_180
+#elif LCD_ROTATION_DEGREES == 270
+#define LCD_ROTATION             LV_DISPLAY_ROTATION_270
+#else
+#error "LCD_ROTATION_DEGREES must be 0, 90, 180, or 270"
+#endif
 
 #define I2C_PIN_SDA              GPIO_NUM_8
 #define I2C_PIN_SCL              GPIO_NUM_7
@@ -160,10 +173,11 @@ static esp_err_t init_lvgl(void)
         .vres = LCD_V_RES,
         .color_format = LV_COLOR_FORMAT_RGB565,
         .rotation = {.swap_xy = 0, .mirror_x = 0, .mirror_y = 0},
-        .flags = {.buff_dma = true, .swap_bytes = true},
+        .flags = {.buff_dma = true, .swap_bytes = true, .sw_rotate = true},
     };
     display = lvgl_port_add_disp(&display_config);
     ESP_RETURN_ON_FALSE(display, ESP_FAIL, TAG, "LVGL display creation failed");
+    lv_display_set_rotation(display, LCD_ROTATION);
 
     const lvgl_port_touch_cfg_t touch_config = {
         .disp = display,

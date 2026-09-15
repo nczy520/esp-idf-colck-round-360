@@ -111,13 +111,13 @@ static esp_err_t init_lvgl(void)
     const lvgl_port_display_cfg_t display_config = {
         .io_handle = lcd_io,
         .panel_handle = lcd_panel,
-        .buffer_size = BSP_LCD_H_RES * 80,
+        .buffer_size = BSP_LCD_H_RES * 20,
         .double_buffer = true,
         .hres = BSP_LCD_H_RES,
         .vres = BSP_LCD_V_RES,
         .color_format = LV_COLOR_FORMAT_RGB565,
         .rotation = {.swap_xy = 0, .mirror_x = 0, .mirror_y = 0},
-        .flags = {.buff_dma = true, .swap_bytes = true, .sw_rotate = true},
+        .flags = {.buff_dma = true, .buff_spiram = false, .swap_bytes = true, .sw_rotate = true},
     };
     display = lvgl_port_add_disp(&display_config);
     ESP_RETURN_ON_FALSE(display, ESP_FAIL, TAG, "LVGL display creation failed");

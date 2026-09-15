@@ -8,6 +8,10 @@
 #include "lvgl.h"
 
 #include "bsp_display.h"
+#include "weather_icons.h"
+
+/* 定制 CJK 字体：18px，含二十四节气 / 天干地支 / 农历日期 / 天气 */
+LV_FONT_DECLARE(lv_font_cjk_clock_18);
 
 /* Clock design tokens — matching LVGL 时钟表盘 design */
 #define COLOR_CLOCK_BG           0xFFFFFF
@@ -31,9 +35,9 @@
 #define CLOCK_TICK_MINOR_INNER   162
 #define CLOCK_RING_OUTER_RADIUS  180
 #define CLOCK_NUMBER_RADIUS      144
-#define WEATHER_TEXT             LV_SYMBOL_IMAGE "  晴朗 26°C"
+#define WEATHER_TEXT             "晴朗 26°C"
 #define LUNAR_TEXT               "农历 八月廿三"
-#define CJK_FONT                 (&lv_font_source_han_sans_sc_16_cjk)
+#define CJK_FONT                 (&lv_font_cjk_clock_18)
 
 static const char *TAG = "clock_ui";
 static lv_obj_t *date_label;
@@ -169,13 +173,23 @@ esp_err_t clock_ui_create(void)
     }
 
     /* 上方天气：图标 + 文本，ink-2 颜色，CJK 字体 */
-    lv_obj_t *weather_label = lv_label_create(screen);
+    lv_obj_t *weather_row = lv_obj_create(screen);
+    lv_obj_set_style_bg_opa(weather_row, LV_OPA_TRANSP, 0);
+    lv_obj_set_style_border_width(weather_row, 0, 0);
+    lv_obj_set_style_pad_all(weather_row, 0, 0);
+    lv_obj_set_flex_flow(weather_row, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(weather_row, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_style_pad_column(weather_row, 4, 0);
+    lv_obj_set_height(weather_row, 20);
+    lv_obj_align(weather_row, LV_ALIGN_TOP_MID, 0, 100);
+
+    lv_obj_t *weather_icon = lv_image_create(weather_row);
+    lv_image_set_src(weather_icon, weather_icons[WEATHER_SUNNY]);
+
+    lv_obj_t *weather_label = lv_label_create(weather_row);
     lv_label_set_text(weather_label, WEATHER_TEXT);
     lv_obj_set_style_text_color(weather_label, lv_color_hex(COLOR_CLOCK_INK_2), 0);
     lv_obj_set_style_text_font(weather_label, CJK_FONT, 0);
-    lv_obj_set_style_text_align(weather_label, LV_TEXT_ALIGN_CENTER, 0);
-    lv_obj_set_width(weather_label, BSP_LCD_H_RES);
-    lv_obj_align(weather_label, LV_ALIGN_TOP_MID, 0, 100);
 
     hour_hand = create_clock_hand(clock_face, lv_color_hex(COLOR_CLOCK_INK), 5);
     minute_hand = create_clock_hand(clock_face, lv_color_hex(COLOR_CLOCK_INK), 4);

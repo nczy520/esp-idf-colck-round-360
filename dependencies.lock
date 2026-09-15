@@ -1,4 +1,29 @@
 dependencies:
+  ble_srv:
+    component_hash: 252f64d0c90905d47474de2158a62b0eb7d8ba5a5ae46e20c1799aee6832d0db
+    dependencies:
+    - name: idf
+      version: '>=6.0'
+    - name: michmich/esp-idf-wifi-provisioner
+      version: '*'
+    - name: joltwallet/littlefs
+      version: '*'
+    source:
+      git: https://github.com/nczy520/esp-idf-ble-srv.git
+      path: ble_srv
+      type: git
+    targets:
+    - esp32
+    - esp32s2
+    - esp32s3
+    - esp32c2
+    - esp32c3
+    - esp32c5
+    - esp32c6
+    - esp32c61
+    - esp32h2
+    - esp32p4
+    version: 6c39b171453608fcef1316a071830394e1a83041
   espressif/cmake_utilities:
     component_hash: 351350613ceafba240b761b4ea991e0f231ac7a9f59a9ee901f751bddc0bb18f
     dependencies:
@@ -43,6 +68,16 @@ dependencies:
     source:
       type: idf
     version: 6.1.0
+  joltwallet/littlefs:
+    component_hash: 3af20a3d75c49db9dc2286fd50862c34055c9f578419ad1f2bf7ed3ed01391fe
+    dependencies:
+    - name: idf
+      require: private
+      version: '>=5.0'
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    version: 1.22.3
   lvgl/lvgl:
     component_hash: 184e532558c1c45fefed631f3e235423d22582aafb4630f3e8885c35281a49ae
     dependencies: []
@@ -50,13 +85,30 @@ dependencies:
       registry_url: https://components.espressif.com/
       type: service
     version: 9.5.0
+  michmich/esp-idf-wifi-provisioner:
+    component_hash: 4097d69b49e4781f951ceb80e2966daebc2dd47794c306059797abf4c9ecf1f1
+    dependencies:
+    - name: idf
+      require: private
+      version: '>=5.0.0'
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    targets:
+    - esp32
+    - esp32s2
+    - esp32s3
+    - esp32c3
+    - esp32c6
+    version: 0.4.0
 direct_dependencies:
+- ble_srv
 - espressif/cmake_utilities
 - espressif/esp_lcd_touch
 - espressif/esp_lcd_touch_ft5x06
 - espressif/esp_lvgl_port
 - idf
 - lvgl/lvgl
-manifest_hash: ed83e274db8015f45989361879fee74acf3b1dc02d7bcb11a44b3a71177bcfe2
+manifest_hash: a23f2a36fe9d09d01de24b92fbea29fdad1206215c6192a9b87193fdb51e086f
 target: esp32s3
 version: 3.0.0

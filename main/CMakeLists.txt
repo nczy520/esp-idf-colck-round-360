@@ -4,6 +4,7 @@ idf_component_register(
         "bsp_backlight.c" 
         "bsp_display.c" 
         "clock_ui.c" 
+        "calendar_lunar.c"
         "fonts/lv_font_cjk_clock_18.c" 
         "fonts/weather_icons.c"
     INCLUDE_DIRS 

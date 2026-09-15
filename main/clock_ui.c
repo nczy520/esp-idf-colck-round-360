@@ -8,6 +8,7 @@
 #include "lvgl.h"
 
 #include "bsp_display.h"
+#include "calendar_lunar.h"
 #include "weather_icons.h"
 
 /* 定制 CJK 字体：18px，含二十四节气 / 天干地支 / 农历日期 / 天气 */
@@ -36,7 +37,6 @@ LV_FONT_DECLARE(lv_font_cjk_clock_18);
 #define CLOCK_RING_OUTER_RADIUS  180
 #define CLOCK_NUMBER_RADIUS      144
 #define WEATHER_TEXT             "晴朗 26°C"
-#define LUNAR_TEXT               "农历 八月廿三"
 #define CJK_FONT                 (&lv_font_cjk_clock_18)
 
 static const char *TAG = "clock_ui";
@@ -101,6 +101,8 @@ static void clock_update_cb(lv_timer_t *timer)
     time_t now = time(NULL);
     struct tm current_time;
     localtime_r(&now, &current_time);
+    calendar_info_t calendar;
+    bool calendar_valid = calendar_get_info(&current_time, &calendar);
 
     static const char *weekday_names[] = {"周日", "周一", "周二", "周三", "周四", "周五", "周六"};
 
@@ -118,6 +120,13 @@ static void clock_update_cb(lv_timer_t *timer)
                           current_time.tm_mon + 1,
                           current_time.tm_mday,
                           weekday_names[current_time.tm_wday]);
+    if (calendar_valid) {
+        lv_label_set_text_fmt(lunar_label, "农历%s%s  %s\n节日%s  节气%s\n干支 %s %s %s",
+                              calendar.lunar.leap_month ? "闰" : "",
+                              calendar.lunar_month_name, calendar.lunar_day_name,
+                      calendar.festival, calendar.solar_term,
+                              calendar.year_ganzhi, calendar.month_ganzhi, calendar.day_ganzhi);
+    }
 }
 
 esp_err_t clock_ui_create(void)
@@ -221,7 +230,7 @@ esp_err_t clock_ui_create(void)
     lv_obj_align(date_label, LV_ALIGN_TOP_MID, 0, 220);
 
     lunar_label = lv_label_create(screen);
-    lv_label_set_text(lunar_label, LUNAR_TEXT);
+    lv_label_set_text(lunar_label, "农历计算中");
     lv_obj_set_style_text_color(lunar_label, lv_color_hex(COLOR_CLOCK_INK_3), 0);
     lv_obj_set_style_text_font(lunar_label, CJK_FONT, 0);
     lv_obj_set_style_text_align(lunar_label, LV_TEXT_ALIGN_CENTER, 0);

@@ -4,7 +4,6 @@
 #include <string.h>
 #include <time.h>
 
-#include "esp_check.h"
 #include "esp_lvgl_port.h"
 #include "lvgl.h"
 

@@ -1,12 +1,12 @@
-#include "esp_err.h"
-#include "esp_log.h"
+#include <stdio.h>
+#include <string.h>
+#include <time.h>
 
 #include "bsp_backlight.h"
 #include "bsp_display.h"
 #include "clock_ui.h"
 #include "weather_service.h"
 
-#include <time.h>
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -91,8 +91,8 @@ static int app_custom_cmd_handler(uint16_t conn_handle, const uint8_t *data, uin
 
     // uptime：返回设备运行时长（秒）
     if (strcmp(cmd, "uptime") == 0) {
-        uint32_t uptime = (uint32_t)(esp_timer_get_time() / 1000000);
-        int n = snprintf((char *)resp_buf, resp_buf_len, "uptime: %lus", (unsigned long)uptime);
+        uint32_t uptime_seconds = (uint32_t)(esp_timer_get_time() / 1000000);
+        int n = snprintf((char *)resp_buf, resp_buf_len, "uptime: %lus", (unsigned long)uptime_seconds);
         if (n < 0) n = 0;
         if (resp_len) *resp_len = (uint16_t)n;
         return 0;
@@ -100,12 +100,12 @@ static int app_custom_cmd_handler(uint16_t conn_handle, const uint8_t *data, uin
 
     // heap：返回堆内存信息
     if (strcmp(cmd, "heap") == 0) {
-        uint32_t free = esp_get_free_heap_size();
+        uint32_t total_free_heap = esp_get_free_heap_size();
         uint32_t internal_free = heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
         uint32_t psram_free = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
         int n = snprintf((char *)resp_buf, resp_buf_len,
                           "heap free: %luB\ninternal free: %luB\npsram free: %luB",
-                          (unsigned long)free, (unsigned long)internal_free,
+                          (unsigned long)total_free_heap, (unsigned long)internal_free,
                           (unsigned long)psram_free);
         if (n < 0) n = 0;
         if (resp_len) *resp_len = (uint16_t)n;

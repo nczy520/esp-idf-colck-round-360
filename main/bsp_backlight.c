@@ -1,6 +1,5 @@
 #include "bsp_backlight.h"
 
-#include "driver/gpio.h"
 #include "driver/ledc.h"
 #include "esp_check.h"
 #include "app_config.h"

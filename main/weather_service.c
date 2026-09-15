@@ -137,8 +137,8 @@ static bool parse_ical(char *ical, const char *date, weather_cache_t *result)
     int matching_event_count = 0;
 
     char *saveptr = NULL;
-        for (char *line = strtok_r(ical, "\r\n", &saveptr); line;
-            line = strtok_r(NULL, "\r\n", &saveptr)) {
+    for (char *line = strtok_r(ical, "\r\n", &saveptr); line;
+         line = strtok_r(NULL, "\r\n", &saveptr)) {
         if (strcmp(line, "BEGIN:VEVENT") == 0) {
             event_count++;
             in_event = true;

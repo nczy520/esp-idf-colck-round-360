@@ -12,21 +12,7 @@
 
 #include "esp_lcd_jd9855.h"
 #include "esp_lcd_touch_ft5x06.h"
-
-#define LCD_HOST            SPI2_HOST
-#define LCD_PIN_CS          GPIO_NUM_1
-#define LCD_PIN_SCLK        GPIO_NUM_2
-#define LCD_PIN_D0          GPIO_NUM_4
-#define LCD_PIN_D1          GPIO_NUM_3
-#define LCD_PIN_D2          GPIO_NUM_5
-#define LCD_PIN_D3          GPIO_NUM_6
-#define LCD_PIN_RST         GPIO_NUM_NC
-
-#define I2C_PIN_SDA         GPIO_NUM_8
-#define I2C_PIN_SCL         GPIO_NUM_7
-#define I2C_PORT            I2C_NUM_0
-#define I2C_FREQ_HZ         400000
-#define TOUCH_I2C_ADDRESS   0x15
+#include "app_config.h"
 
 static const char *TAG = "bsp_display";
 static esp_lcd_panel_io_handle_t lcd_io;
@@ -38,21 +24,21 @@ static lv_display_t *display;
 static esp_err_t init_lcd(void)
 {
     const spi_bus_config_t bus_config = SPD2010_PANEL_BUS_QSPI_CONFIG(
-        LCD_PIN_SCLK, LCD_PIN_D0, LCD_PIN_D1, LCD_PIN_D2, LCD_PIN_D3,
+        APP_LCD_PIN_SCLK, APP_LCD_PIN_D0, APP_LCD_PIN_D1, APP_LCD_PIN_D2, APP_LCD_PIN_D3,
         BSP_LCD_H_RES * BSP_LCD_V_RES * BSP_LCD_BITS_PER_PX / 8);
-    ESP_RETURN_ON_ERROR(spi_bus_initialize(LCD_HOST, &bus_config, SPI_DMA_CH_AUTO), TAG,
+    ESP_RETURN_ON_ERROR(spi_bus_initialize(APP_LCD_HOST, &bus_config, SPI_DMA_CH_AUTO), TAG,
                         "QSPI bus init failed");
 
     const esp_lcd_panel_io_spi_config_t io_config = SPD2010_PANEL_IO_QSPI_CONFIG(
-        LCD_PIN_CS, NULL, NULL);
-    ESP_RETURN_ON_ERROR(esp_lcd_new_panel_io_spi(LCD_HOST, &io_config, &lcd_io), TAG,
+        APP_LCD_PIN_CS, NULL, NULL);
+    ESP_RETURN_ON_ERROR(esp_lcd_new_panel_io_spi(APP_LCD_HOST, &io_config, &lcd_io), TAG,
                         "LCD IO init failed");
 
     const spd2010_vendor_config_t vendor_config = {
         .flags = {.use_qspi_interface = 1},
     };
     const esp_lcd_panel_dev_config_t panel_config = {
-        .reset_gpio_num = LCD_PIN_RST,
+        .reset_gpio_num = APP_LCD_PIN_RST,
         .rgb_ele_order = LCD_RGB_ELEMENT_ORDER_BGR,
         .bits_per_pixel = BSP_LCD_BITS_PER_PX,
         .vendor_config = (void *)&vendor_config,
@@ -69,9 +55,9 @@ static esp_err_t init_lcd(void)
 static esp_err_t init_touch(void)
 {
     const i2c_master_bus_config_t bus_config = {
-        .i2c_port = I2C_PORT,
-        .sda_io_num = I2C_PIN_SDA,
-        .scl_io_num = I2C_PIN_SCL,
+        .i2c_port = APP_TOUCH_PORT,
+        .sda_io_num = APP_TOUCH_PIN_SDA,
+        .scl_io_num = APP_TOUCH_PIN_SCL,
         .clk_source = I2C_CLK_SRC_DEFAULT,
         .glitch_ignore_cnt = 7,
         .flags.enable_internal_pullup = true,
@@ -81,8 +67,8 @@ static esp_err_t init_touch(void)
                         "I2C master bus init failed");
 
     const esp_lcd_panel_io_i2c_config_t io_config = {
-        .dev_addr = TOUCH_I2C_ADDRESS,
-        .scl_speed_hz = I2C_FREQ_HZ,
+        .dev_addr = APP_TOUCH_ADDRESS,
+        .scl_speed_hz = APP_TOUCH_FREQ_HZ,
         .control_phase_bytes = 1,
         .dc_bit_offset = 0,
         .lcd_cmd_bits = 8,

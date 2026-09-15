@@ -2,15 +2,16 @@
 
 #include "esp_err.h"
 #include "lvgl.h"
+#include "app_config.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define BSP_LCD_H_RES        360
-#define BSP_LCD_V_RES        360
-#define BSP_LCD_BITS_PER_PX  16
-#define BSP_LCD_ROTATION_DEG 270
+#define BSP_LCD_H_RES        APP_LCD_H_RES
+#define BSP_LCD_V_RES        APP_LCD_V_RES
+#define BSP_LCD_BITS_PER_PX  APP_LCD_BITS_PER_PX
+#define BSP_LCD_ROTATION_DEG APP_LCD_ROTATION_DEG
 
 #if BSP_LCD_ROTATION_DEG == 0
 #define BSP_LCD_ROTATION     LV_DISPLAY_ROTATION_0

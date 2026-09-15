@@ -17,28 +17,17 @@
 
 #include "ble_srv.h"
 #include "clock_ui.h"
-
-#define WEATHER_CACHE_NAMESPACE "weather"
-#define WEATHER_CACHE_KEY "current"
-#define WEATHER_URL_FORMAT "https://w.mdeve.com/%s,n0.ics"
-#define WEATHER_UPDATE_INTERVAL_SECONDS (30 * 60)
-#define WEATHER_RETRY_INTERVAL_SECONDS 60
-#define WEATHER_RESPONSE_BUFFER_SIZE 12288
-#define WEATHER_TEXT_SIZE 128
-#define WEATHER_DATE_SIZE 9
-#define WEATHER_LUNAR_SIZE 64
-#define WEATHER_GANZHI_SIZE 64
-#define WEATHER_TERM_SIZE 32
+#include "app_config.h"
 
 static const char *TAG = "weather_service";
 
 typedef struct {
-    char date[WEATHER_DATE_SIZE];
-    char weather[WEATHER_TEXT_SIZE];
-    char lunar[WEATHER_LUNAR_SIZE];
-    char ganzhi[WEATHER_GANZHI_SIZE];
-    char solar_term[WEATHER_TERM_SIZE];
-    char festival[WEATHER_TERM_SIZE];
+    char date[APP_WEATHER_DATE_SIZE];
+    char weather[APP_WEATHER_TEXT_SIZE];
+    char lunar[APP_WEATHER_LUNAR_SIZE];
+    char ganzhi[APP_WEATHER_GANZHI_SIZE];
+    char solar_term[APP_WEATHER_TERM_SIZE];
+    char festival[APP_WEATHER_TERM_SIZE];
     int64_t updated_at;
 } weather_cache_t;
 
@@ -49,6 +38,7 @@ typedef struct {
 } http_response_t;
 
 static weather_cache_t cached_weather;
+static bool cache_loaded;
 
 static esp_err_t http_event_handler(esp_http_client_event_t *event)
 {
@@ -131,20 +121,15 @@ static void extract_festival(char *destination, size_t destination_size, const c
     copy_field(destination, destination_size, start, colon);
 }
 
-static bool parse_ical(const char *ical, const char *date, weather_cache_t *result)
+static bool parse_ical(char *ical, const char *date, weather_cache_t *result)
 {
     size_t ical_length = strlen(ical);
     ESP_LOGD(TAG, "Parsing ICS: date=%s, length=%u", date, (unsigned)ical_length);
-    char *copy = malloc(ical_length + 1);
-    if (!copy) {
-        return false;
-    }
-    memcpy(copy, ical, ical_length + 1);
 
     bool in_event = false;
     bool weather_event = false;
-    char event_date[WEATHER_DATE_SIZE] = {0};
-    char summary[WEATHER_TEXT_SIZE] = {0};
+    char event_date[APP_WEATHER_DATE_SIZE] = {0};
+    char summary[APP_WEATHER_TEXT_SIZE] = {0};
     char description[2048] = {0};
     bool found_weather = false;
     bool found_lunar = false;
@@ -152,8 +137,8 @@ static bool parse_ical(const char *ical, const char *date, weather_cache_t *resu
     int matching_event_count = 0;
 
     char *saveptr = NULL;
-    for (char *line = strtok_r(copy, "\r\n", &saveptr); line;
-         line = strtok_r(NULL, "\r\n", &saveptr)) {
+        for (char *line = strtok_r(ical, "\r\n", &saveptr); line;
+            line = strtok_r(NULL, "\r\n", &saveptr)) {
         if (strcmp(line, "BEGIN:VEVENT") == 0) {
             event_count++;
             in_event = true;
@@ -206,8 +191,6 @@ static bool parse_ical(const char *ical, const char *date, weather_cache_t *resu
             copy_field(description, sizeof(description), line + 12, NULL);
         }
     }
-    free(copy);
-
     snprintf(result->date, sizeof(result->date), "%s", date);
     ESP_LOGD(TAG, "ICS parse result: events=%d matching=%d weather=%s lunar=%s",
              event_count, matching_event_count,
@@ -217,14 +200,17 @@ static bool parse_ical(const char *ical, const char *date, weather_cache_t *resu
 
 static bool load_cache(void)
 {
+    if (cache_loaded) {
+        return true;
+    }
     nvs_handle_t handle;
-    esp_err_t err = nvs_open(WEATHER_CACHE_NAMESPACE, NVS_READONLY, &handle);
+    esp_err_t err = nvs_open(APP_WEATHER_CACHE_NAMESPACE, NVS_READONLY, &handle);
     if (err != ESP_OK) {
         ESP_LOGD(TAG, "No weather cache: nvs_open failed: %s", esp_err_to_name(err));
         return false;
     }
     size_t size = sizeof(cached_weather);
-    err = nvs_get_blob(handle, WEATHER_CACHE_KEY, &cached_weather, &size);
+    err = nvs_get_blob(handle, APP_WEATHER_CACHE_KEY, &cached_weather, &size);
     nvs_close(handle);
     if (err != ESP_OK || size != sizeof(cached_weather)) {
         ESP_LOGW(TAG, "Weather cache invalid: read=%s size=%u expected=%u",
@@ -232,20 +218,26 @@ static bool load_cache(void)
         return false;
     }
     clock_ui_set_weather(cached_weather.weather);
+    cache_loaded = true;
     ESP_LOGI(TAG, "Weather cache loaded: date=%s weather=%s updated_at=%lld",
              cached_weather.date, cached_weather.weather, (long long)cached_weather.updated_at);
     return true;
 }
 
+bool weather_service_restore_cache(void)
+{
+    return load_cache();
+}
+
 static void save_cache(const weather_cache_t *weather)
 {
     nvs_handle_t handle;
-    esp_err_t err = nvs_open(WEATHER_CACHE_NAMESPACE, NVS_READWRITE, &handle);
+    esp_err_t err = nvs_open(APP_WEATHER_CACHE_NAMESPACE, NVS_READWRITE, &handle);
     if (err != ESP_OK) {
         ESP_LOGW(TAG, "Weather cache open failed: %s", esp_err_to_name(err));
         return;
     }
-    err = nvs_set_blob(handle, WEATHER_CACHE_KEY, weather, sizeof(*weather));
+    err = nvs_set_blob(handle, APP_WEATHER_CACHE_KEY, weather, sizeof(*weather));
     if (err == ESP_OK) {
         err = nvs_commit(handle);
     }
@@ -263,21 +255,21 @@ static bool fetch_weather(void)
     struct tm local_time;
     localtime_r(&now, &local_time);
 
-    char date[WEATHER_DATE_SIZE];
+    char date[APP_WEATHER_DATE_SIZE];
     strftime(date, sizeof(date), "%Y%m%d", &local_time);
 
     char url[96];
-    snprintf(url, sizeof(url), WEATHER_URL_FORMAT, CONFIG_WEATHER_CITY_CODE);
+    snprintf(url, sizeof(url), APP_WEATHER_URL_FORMAT, CONFIG_WEATHER_CITY_CODE);
     ESP_LOGI(TAG, "Weather request: city=%s date=%s url=%s",
              CONFIG_WEATHER_CITY_CODE, date, url);
     size_t internal_free = heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
     size_t spiram_free = heap_caps_get_free_size(MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
     ESP_LOGI(TAG, "TLS memory before request: internal=%uB spiram=%uB",
              (unsigned)internal_free, (unsigned)spiram_free);
-    char *response_buffer = heap_caps_malloc(WEATHER_RESPONSE_BUFFER_SIZE,
+    char *response_buffer = heap_caps_malloc(APP_WEATHER_RESPONSE_BUFFER_SIZE,
                                              MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
     if (!response_buffer) {
-        response_buffer = heap_caps_malloc(WEATHER_RESPONSE_BUFFER_SIZE,
+        response_buffer = heap_caps_malloc(APP_WEATHER_RESPONSE_BUFFER_SIZE,
                                            MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
     }
     if (!response_buffer) {
@@ -286,7 +278,7 @@ static bool fetch_weather(void)
     }
     http_response_t response = {
         .data = response_buffer,
-        .capacity = WEATHER_RESPONSE_BUFFER_SIZE,
+        .capacity = APP_WEATHER_RESPONSE_BUFFER_SIZE,
     };
     esp_http_client_config_t config = {
         .url = url,
@@ -335,7 +327,7 @@ static void weather_task(void *arg)
     bool cache_available = load_cache();
     ESP_LOGI(TAG, "Weather service started: cache=%s update_interval=%us",
              cache_available ? "available" : "unavailable",
-             WEATHER_UPDATE_INTERVAL_SECONDS);
+             APP_WEATHER_UPDATE_INTERVAL_SEC);
     int64_t last_success = 0;
     bool last_wifi_connected = false;
     while (true) {
@@ -345,7 +337,7 @@ static void weather_task(void *arg)
             ESP_LOGI(TAG, "Wi-Fi state: %s", wifi_connected ? "connected" : "disconnected");
             last_wifi_connected = wifi_connected;
         }
-        bool due = last_success == 0 || now - last_success >= WEATHER_UPDATE_INTERVAL_SECONDS;
+        bool due = last_success == 0 || now - last_success >= APP_WEATHER_UPDATE_INTERVAL_SEC;
         if (due) {
             ESP_LOGD(TAG, "Weather update due: wifi=%s elapsed=%llds",
                      wifi_connected ? "yes" : "no",
@@ -359,13 +351,13 @@ static void weather_task(void *arg)
             ESP_LOGD(TAG, "Weather update skipped: Wi-Fi unavailable");
         }
         vTaskDelay(pdMS_TO_TICKS((due && !wifi_connected) ?
-                                 WEATHER_RETRY_INTERVAL_SECONDS * 1000 : 10000));
+                     APP_WEATHER_RETRY_INTERVAL_SEC * 1000 : 10000));
     }
 }
 
 esp_err_t weather_service_start(void)
 {
-    if (xTaskCreateWithCaps(weather_task, "weather_task", 12288, NULL, 4, NULL,
+    if (xTaskCreateWithCaps(weather_task, "weather_task", APP_WEATHER_TASK_STACK_BYTES, NULL, 4, NULL,
                             MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT) != pdPASS) {
         ESP_LOGE(TAG, "weather task creation failed: PSRAM stack unavailable");
         return ESP_ERR_NO_MEM;

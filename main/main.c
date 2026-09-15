@@ -166,6 +166,8 @@ void app_main(void)
     }
     ESP_ERROR_CHECK(ret);
 
+    weather_service_restore_cache();
+
     if (!ble_srv_log_init()) {
         BLE_SRV_LOGE(TAG, "Log system initialization failed");
         return;

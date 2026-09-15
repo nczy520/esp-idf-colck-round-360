@@ -4,6 +4,7 @@
 #include "bsp_backlight.h"
 #include "bsp_display.h"
 #include "clock_ui.h"
+#include "weather_service.h"
 
 #include <time.h>
 #include "esp_timer.h"
@@ -192,6 +193,8 @@ void app_main(void)
 #endif
 
     BLE_SRV_LOGI(TAG, "BLE Service Example started successfully");
+
+    ESP_ERROR_CHECK(weather_service_start());
 
 #ifdef CONFIG_BLE_SRV_WIFI_ENABLED
     BLE_SRV_LOGI(TAG, "WiFi provisioner: started");

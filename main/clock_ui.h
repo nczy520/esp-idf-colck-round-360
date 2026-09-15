@@ -13,6 +13,11 @@ extern "C" {
  */
 esp_err_t clock_ui_create(void);
 
+/**
+ * @brief 更新天气标签文本。
+ */
+void clock_ui_set_weather(const char *text);
+
 #ifdef __cplusplus
 }
 #endif

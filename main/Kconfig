@@ -1,0 +1,9 @@
+menu "Weather"
+
+config WEATHER_CITY_CODE
+    string "Weather city code"
+    default "101270501"
+    help
+        City code used to build the w.mdeve.com iCalendar weather URL.
+
+endmenu

@@ -1,6 +1,7 @@
 #include "clock_ui.h"
 
 #include <math.h>
+#include <string.h>
 #include <time.h>
 
 #include "esp_check.h"
@@ -36,12 +37,13 @@ LV_FONT_DECLARE(lv_font_cjk_clock_18);
 #define CLOCK_TICK_MINOR_INNER   162
 #define CLOCK_RING_OUTER_RADIUS  180
 #define CLOCK_NUMBER_RADIUS      144
-#define WEATHER_TEXT             "晴朗 26°C"
+#define WEATHER_TEXT             "天气加载中"
 #define CJK_FONT                 (&lv_font_cjk_clock_18)
 
-static const char *TAG = "clock_ui";
 static lv_obj_t *date_label;
 static lv_obj_t *lunar_label;
+static lv_obj_t *weather_label;
+static lv_obj_t *weather_icon;
 static lv_obj_t *hour_hand;
 static lv_obj_t *minute_hand;
 static lv_obj_t *second_hand;
@@ -49,6 +51,40 @@ static lv_point_precise_t hour_points[2];
 static lv_point_precise_t minute_points[2];
 static lv_point_precise_t second_points[2];
 static lv_point_precise_t minute_tick_points[60][2];
+
+static weather_type_t weather_type_from_text(const char *text)
+{
+    if (strstr(text, "雷") || strstr(text, "电") || strstr(text, "冰雹")) {
+        return WEATHER_THUNDERSTORM;
+    }
+    if (strstr(text, "雪") || strstr(text, "冻雨")) {
+        return WEATHER_SNOWY;
+    }
+    if (strstr(text, "雨")) {
+        return WEATHER_RAINY;
+    }
+    if (strstr(text, "雾") || strstr(text, "霾") || strstr(text, "沙尘")) {
+        return WEATHER_FOGGY;
+    }
+    if (strstr(text, "阴")) {
+        return WEATHER_OVERCAST;
+    }
+    if (strstr(text, "云")) {
+        return WEATHER_CLOUDY;
+    }
+    return WEATHER_SUNNY;
+}
+
+void clock_ui_set_weather(const char *text)
+{
+    if (!weather_label || !weather_icon || !text) {
+        return;
+    }
+    lvgl_port_lock(0);
+    lv_label_set_text(weather_label, text);
+    lv_image_set_src(weather_icon, weather_icons[weather_type_from_text(text)]);
+    lvgl_port_unlock();
+}
 
 static lv_obj_t *create_clock_hand(lv_obj_t *parent, lv_color_t color, int width)
 {
@@ -101,10 +137,33 @@ static void clock_update_cb(lv_timer_t *timer)
     time_t now = time(NULL);
     struct tm current_time;
     localtime_r(&now, &current_time);
-    calendar_info_t calendar;
-    bool calendar_valid = calendar_get_info(&current_time, &calendar);
 
     static const char *weekday_names[] = {"周日", "周一", "周二", "周三", "周四", "周五", "周六"};
+    static calendar_info_t calendar;
+    static int cached_year = -1;
+    static int cached_month = -1;
+    static int cached_day = -1;
+
+    if (current_time.tm_year != cached_year ||
+        current_time.tm_mon != cached_month ||
+        current_time.tm_mday != cached_day) {
+        cached_year = current_time.tm_year;
+        cached_month = current_time.tm_mon;
+        cached_day = current_time.tm_mday;
+
+        bool calendar_valid = calendar_get_info(&current_time, &calendar);
+        lv_label_set_text_fmt(date_label, "%d年%d月%d日 %s",
+                              current_time.tm_year + 1900,
+                              current_time.tm_mon + 1,
+                              current_time.tm_mday,
+                              weekday_names[current_time.tm_wday]);
+        if (calendar_valid) {
+            lv_label_set_text_fmt(lunar_label, "农历%s%s%s %s%s",
+                                  calendar.lunar.leap_month ? "闰" : "",
+                                  calendar.lunar_month_name, calendar.lunar_day_name,
+                                  calendar.festival, calendar.solar_term);
+        }
+    }
 
     float second_angle = (float)current_time.tm_sec * 2.0f * CLOCK_PI / 60.0f - CLOCK_PI / 2.0f;
     float minute_angle = ((float)current_time.tm_min + (float)current_time.tm_sec / 60.0f)
@@ -116,17 +175,6 @@ static void clock_update_cb(lv_timer_t *timer)
     update_clock_hand(minute_hand, minute_points, minute_angle, CLOCK_MINUTE_HAND_LENGTH, 0);
     update_clock_hand(second_hand, second_points, second_angle,
                       CLOCK_SECOND_HAND_LENGTH, CLOCK_SECOND_TAIL_LENGTH);
-    lv_label_set_text_fmt(date_label, "%d月%d日 %s",
-                          current_time.tm_mon + 1,
-                          current_time.tm_mday,
-                          weekday_names[current_time.tm_wday]);
-    if (calendar_valid) {
-        lv_label_set_text_fmt(lunar_label, "农历%s%s  %s\n节日%s  节气%s\n干支 %s %s %s",
-                              calendar.lunar.leap_month ? "闰" : "",
-                              calendar.lunar_month_name, calendar.lunar_day_name,
-                      calendar.festival, calendar.solar_term,
-                              calendar.year_ganzhi, calendar.month_ganzhi, calendar.day_ganzhi);
-    }
 }
 
 esp_err_t clock_ui_create(void)
@@ -181,24 +229,29 @@ esp_err_t clock_ui_create(void)
                      CLOCK_CENTER - 12 - (int)lroundf(cosf(angle) * CLOCK_NUMBER_RADIUS));
     }
 
-    /* 上方天气：图标 + 文本，ink-2 颜色，CJK 字体 */
+    /* 上方天气：图标单独一行，文字显示在图标下方 */
     lv_obj_t *weather_row = lv_obj_create(screen);
     lv_obj_set_style_bg_opa(weather_row, LV_OPA_TRANSP, 0);
     lv_obj_set_style_border_width(weather_row, 0, 0);
     lv_obj_set_style_pad_all(weather_row, 0, 0);
-    lv_obj_set_flex_flow(weather_row, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_flow(weather_row, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(weather_row, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_set_style_pad_column(weather_row, 4, 0);
-    lv_obj_set_height(weather_row, 20);
-    lv_obj_align(weather_row, LV_ALIGN_TOP_MID, 0, 100);
+    lv_obj_set_style_pad_row(weather_row, 2, 0);
+    lv_obj_set_width(weather_row, 290);
+    lv_obj_set_height(weather_row, 64);
+    lv_obj_align(weather_row, LV_ALIGN_TOP_MID, 0, 78);
 
-    lv_obj_t *weather_icon = lv_image_create(weather_row);
+    weather_icon = lv_image_create(weather_row);
     lv_image_set_src(weather_icon, weather_icons[WEATHER_SUNNY]);
 
-    lv_obj_t *weather_label = lv_label_create(weather_row);
+    weather_label = lv_label_create(weather_row);
     lv_label_set_text(weather_label, WEATHER_TEXT);
+    lv_obj_set_width(weather_label, 258);
+    lv_label_set_long_mode(weather_label, LV_LABEL_LONG_MODE_CLIP);
+    lv_obj_set_style_text_align(weather_label, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_set_style_text_color(weather_label, lv_color_hex(COLOR_CLOCK_INK_2), 0);
     lv_obj_set_style_text_font(weather_label, CJK_FONT, 0);
+
 
     hour_hand = create_clock_hand(clock_face, lv_color_hex(COLOR_CLOCK_INK), 5);
     minute_hand = create_clock_hand(clock_face, lv_color_hex(COLOR_CLOCK_INK), 4);
@@ -221,7 +274,7 @@ esp_err_t clock_ui_create(void)
     lv_obj_set_style_border_width(center_inner, 0, 0);
     lv_obj_set_style_radius(center_inner, LV_RADIUS_CIRCLE, 0);
 
-    /* 下方日期 + 农历 */
+    // 日期标签：屏幕下方、农历上方，居中，CJK 字体
     date_label = lv_label_create(screen);
     lv_obj_set_style_text_color(date_label, lv_color_hex(COLOR_CLOCK_INK_2), 0);
     lv_obj_set_style_text_font(date_label, CJK_FONT, 0);
@@ -229,13 +282,14 @@ esp_err_t clock_ui_create(void)
     lv_obj_set_width(date_label, BSP_LCD_H_RES);
     lv_obj_align(date_label, LV_ALIGN_TOP_MID, 0, 220);
 
+    /* 下方农历 */
     lunar_label = lv_label_create(screen);
     lv_label_set_text(lunar_label, "农历计算中");
     lv_obj_set_style_text_color(lunar_label, lv_color_hex(COLOR_CLOCK_INK_3), 0);
     lv_obj_set_style_text_font(lunar_label, CJK_FONT, 0);
     lv_obj_set_style_text_align(lunar_label, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_set_width(lunar_label, BSP_LCD_H_RES);
-    lv_obj_align(lunar_label, LV_ALIGN_TOP_MID, 0, 251);
+    lv_obj_align(lunar_label, LV_ALIGN_TOP_MID, 0, 250);
 
     clock_update_cb(NULL);
     lv_timer_create(clock_update_cb, 1000, NULL);

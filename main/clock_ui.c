@@ -218,7 +218,7 @@ esp_err_t clock_ui_create(void)
     lv_obj_set_style_text_font(date_label, CJK_FONT, 0);
     lv_obj_set_style_text_align(date_label, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_set_width(date_label, BSP_LCD_H_RES);
-    lv_obj_align(date_label, LV_ALIGN_TOP_MID, 0, 246);
+    lv_obj_align(date_label, LV_ALIGN_TOP_MID, 0, 220);
 
     lunar_label = lv_label_create(screen);
     lv_label_set_text(lunar_label, LUNAR_TEXT);
@@ -226,7 +226,7 @@ esp_err_t clock_ui_create(void)
     lv_obj_set_style_text_font(lunar_label, CJK_FONT, 0);
     lv_obj_set_style_text_align(lunar_label, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_set_width(lunar_label, BSP_LCD_H_RES);
-    lv_obj_align(lunar_label, LV_ALIGN_TOP_MID, 0, 281);
+    lv_obj_align(lunar_label, LV_ALIGN_TOP_MID, 0, 251);
 
     clock_update_cb(NULL);
     lv_timer_create(clock_update_cb, 1000, NULL);

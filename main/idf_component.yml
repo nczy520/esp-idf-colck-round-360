@@ -4,6 +4,6 @@ dependencies:
   espressif/esp_lcd_touch: ">=1.1.2"
   espressif/esp_lcd_touch_ft5x06: ">=1.0.7"
   ble_srv:
-    git: https://github.com/nczy520/esp-idf-ble-srv.git
+    git: git@github.com:nczy520/esp-idf-ble-srv.git
     path: ble_srv
     version: 6c39b171453608fcef1316a071830394e1a83041

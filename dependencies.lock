@@ -9,7 +9,7 @@ dependencies:
     - name: joltwallet/littlefs
       version: '*'
     source:
-      git: https://github.com/nczy520/esp-idf-ble-srv.git
+      git: git@github.com:nczy520/esp-idf-ble-srv.git
       path: ble_srv
       type: git
     targets:
@@ -109,6 +109,6 @@ direct_dependencies:
 - espressif/esp_lvgl_port
 - idf
 - lvgl/lvgl
-manifest_hash: a23f2a36fe9d09d01de24b92fbea29fdad1206215c6192a9b87193fdb51e086f
+manifest_hash: bd986f3ae4d17b873e34f20c7b0d619fa0a9c91520b0b758dfcf17300056350c
 target: esp32s3
 version: 3.0.0

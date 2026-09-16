@@ -3,14 +3,15 @@ idf_component_register(
         "main.c" 
         "bsp_backlight.c" 
         "bsp_display.c" 
-        "clock_ui.c" 
         "calendar_lunar.c"
+        "ui/clock_ui.c" 
         "weather_service.c"
         "fonts/lv_font_cjk_clock_18.c" 
         "fonts/weather_icons.c"
     INCLUDE_DIRS 
         "." 
         "fonts"
+        "ui"
     REQUIRES 
         esp_driver_ledc esp_lcd_jd9855 esp_lcd_touch_ft5x06 esp_lvgl_port lvgl esp_http_client nvs_flash esp_timer esp-tls
 )

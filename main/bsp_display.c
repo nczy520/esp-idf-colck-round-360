@@ -84,7 +84,7 @@ static esp_err_t init_touch(void)
         .rst_gpio_num = GPIO_NUM_NC,
         .int_gpio_num = GPIO_NUM_NC,
         .levels = {.reset = 0, .interrupt = 0},
-        .flags = {.swap_xy = 0, .mirror_x = 1, .mirror_y = 1},
+        .flags = {.swap_xy = 0, .mirror_x = 0, .mirror_y = 0},
     };
     return esp_lcd_touch_new_i2c_ft5x06(touch_io, &touch_config, &touch_handle);
 }

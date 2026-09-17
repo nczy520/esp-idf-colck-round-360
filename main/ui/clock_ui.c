@@ -11,6 +11,7 @@
 #include "calendar_lunar.h"
 #include "weather_icons.h"
 #include "app_config.h"
+#include "menu_ui.h"
 
 /* 定制 CJK 字体：18px，含二十四节气 / 天干地支 / 农历日期 / 天气 */
 LV_FONT_DECLARE(lv_font_cjk_clock_18);
@@ -290,6 +291,10 @@ esp_err_t clock_ui_create(void)
 
     clock_update_cb(NULL);
     lv_timer_create(clock_update_cb, 1000, NULL);
+
+    /* 在表盘之上安装长按菜单（需在表盘 UI 全部构建完成后调用） */
+    menu_ui_init();
+
     lvgl_port_unlock();
     return ESP_OK;
 }

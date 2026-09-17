@@ -9,6 +9,7 @@
 #include "app_config.h"
 #include "bsp_display.h"
 #include "clock_ui.h"
+#include "timer_ui.h"
 
 extern const lv_image_dsc_t timer;
 extern const lv_image_dsc_t stopwatch;
@@ -251,8 +252,12 @@ static void long_press_event_cb(lv_event_t *e)
 
 static void button_clicked_cb(lv_event_t *e)
 {
-    /* 功能按钮当前只保留按压视觉效果，不执行操作且不关闭菜单。 */
     intptr_t idx = (intptr_t)lv_event_get_user_data(e);
+    if (idx == MENU_ICON_TIMER) {
+        timer_ui_show();
+        return;
+    }
+
     ESP_LOGI(TAG, "function button %d clicked (no-op)", (int)idx);
 }
 

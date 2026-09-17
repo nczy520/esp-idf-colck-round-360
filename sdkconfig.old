@@ -4451,7 +4451,7 @@ CONFIG_BLE_SRV_OTA_HARDWARE_REV=1
 # OTA URL
 #
 CONFIG_BLE_SRV_OTA_URL_ENABLED=y
-CONFIG_BLE_SRV_OTA_URL_DEFAULT="https://mdeve.com/upgrade/esp32/esp32s3_round_lcd_lvgl.bin"
+CONFIG_BLE_SRV_OTA_URL_DEFAULT="https://mdeve.com/upgrade/esp32/esp-idf-colck-round-360.bin"
 # CONFIG_BLE_SRV_OTA_URL_SKIP_CERT_CHECK is not set
 # default:
 # CONFIG_BLE_SRV_OTA_URL_ALLOW_DOWNGRADE is not set

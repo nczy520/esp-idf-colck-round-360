@@ -6,6 +6,7 @@ idf_component_register(
         "calendar_lunar.c"
         "ui/clock_ui.c" 
         "ui/menu_ui.c"
+        "ui/timer_ui.c"
         "weather_service.c"
         "fonts/lv_font_cjk_clock_18.c" 
         "fonts/weather_icons.c"

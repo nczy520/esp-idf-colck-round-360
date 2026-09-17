@@ -222,7 +222,8 @@ esp_err_t clock_ui_create(void)
     lv_obj_set_style_arc_rounded(day_indicator, true, LV_PART_MAIN);
     lv_obj_set_style_arc_opa(day_indicator, LV_OPA_COVER, LV_PART_MAIN);
     lv_obj_set_style_bg_opa(day_indicator, LV_OPA_TRANSP, LV_PART_MAIN);
-    lv_obj_clear_flag(day_indicator, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_clickable(day_indicator, false);
+    lv_obj_set_scrollable(day_indicator, false);
 
     /* 内侧浅色填充：surface 35% 不透明度 */
     lv_obj_t *inner_fill = lv_obj_create(screen);

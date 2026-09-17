@@ -9,6 +9,8 @@
 #include "app_config.h"
 #include "bsp_display.h"
 #include "clock_ui.h"
+#include "countdown_ui.h"
+#include "device_info_ui.h"
 #include "timer_ui.h"
 
 extern const lv_image_dsc_t timer;
@@ -101,8 +103,8 @@ static void style_menu_button(lv_obj_t *btn)
     }
     lv_obj_set_style_transition(btn, &transition_dsc, LV_PART_MAIN);
 
-    lv_obj_clear_flag(btn, LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_add_flag(btn, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_set_scrollable(btn, false);
+    lv_obj_set_clickable(btn, true);
 }
 
 /* 将图标统一重着色为白色，实现线性风格 */
@@ -125,7 +127,7 @@ esp_err_t menu_ui_init(void)
     lv_obj_set_style_border_width(overlay, 0, 0);
     lv_obj_set_style_radius(overlay, 0, 0);
     lv_obj_set_style_pad_all(overlay, 0, 0);
-    lv_obj_clear_flag(overlay, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_scrollable(overlay, false);
     /* 默认即 LV_OBJ_FLAG_CLICKABLE，确保能接收长按事件 */
     lv_obj_add_event_cb(overlay, long_press_event_cb, LV_EVENT_LONG_PRESSED, NULL);
 
@@ -151,7 +153,7 @@ void menu_ui_show(void)
     lv_obj_set_style_border_width(dim, 0, 0);
     lv_obj_set_style_radius(dim, 0, 0);
     lv_obj_set_style_pad_all(dim, 0, 0);
-    lv_obj_clear_flag(dim, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_scrollable(dim, false);
 
     /* 2. 不透明黑色圆环 */
     menu_root = lv_obj_create(overlay);
@@ -163,7 +165,7 @@ void menu_ui_show(void)
     lv_obj_set_style_border_width(menu_root, 1, 0);
     lv_obj_set_style_radius(menu_root, LV_RADIUS_CIRCLE, 0);
     lv_obj_set_style_pad_all(menu_root, 0, 0);
-    lv_obj_clear_flag(menu_root, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_scrollable(menu_root, false);
 
     /* 3. 内层圆盘，形成外环与中心控制区两个层次 */
     lv_obj_t *inner_panel = lv_obj_create(menu_root);
@@ -174,7 +176,8 @@ void menu_ui_show(void)
     lv_obj_set_style_border_width(inner_panel, 0, 0);
     lv_obj_set_style_radius(inner_panel, LV_RADIUS_CIRCLE, 0);
     lv_obj_set_style_pad_all(inner_panel, 0, 0);
-    lv_obj_clear_flag(inner_panel, LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_set_scrollable(inner_panel, false);
+    lv_obj_set_clickable(inner_panel, false);
 
     /* 4. 圆环上的 8 个功能按钮（顺时针从 12 点钟方向开始） */
     for (int i = 0; i < 8; i++) {
@@ -199,7 +202,8 @@ void menu_ui_show(void)
         lv_obj_set_size(icon, MENU_BUTTON_ICON_SIZE, MENU_BUTTON_ICON_SIZE);
         lv_obj_align(icon, LV_ALIGN_CENTER, 0, 0);
         style_icon_white(icon);
-        lv_obj_clear_flag(icon, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);
+        lv_obj_set_clickable(icon, false);
+        lv_obj_set_scrollable(icon, false);
     }
 
     /* 5. 中心关闭按钮 */
@@ -214,15 +218,16 @@ void menu_ui_show(void)
     lv_obj_set_style_pad_all(close_btn, MENU_BUTTON_BOX_PAD, LV_PART_MAIN);
     lv_obj_set_style_bg_color(close_btn, lv_color_hex(MENU_COLOR_ACCENT), LV_PART_MAIN | LV_STATE_PRESSED);
     lv_obj_set_style_bg_opa(close_btn, LV_OPA_COVER, LV_PART_MAIN | LV_STATE_PRESSED);
-    lv_obj_clear_flag(close_btn, LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_add_flag(close_btn, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_set_scrollable(close_btn, false);
+    lv_obj_set_clickable(close_btn, true);
     lv_obj_add_event_cb(close_btn, close_clicked_cb, LV_EVENT_CLICKED, NULL);
 
     lv_obj_t *close_icon = lv_label_create(close_btn);
     lv_label_set_text(close_icon, LV_SYMBOL_CLOSE);
     lv_obj_set_style_text_color(close_icon, lv_color_hex(MENU_COLOR_ICON), LV_PART_MAIN);
     lv_obj_align(close_icon, LV_ALIGN_CENTER, 0, 0);
-    lv_obj_clear_flag(close_icon, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_clickable(close_icon, false);
+    lv_obj_set_scrollable(close_icon, false);
 
     lvgl_port_unlock();
     ESP_LOGI(TAG, "menu shown");
@@ -255,6 +260,14 @@ static void button_clicked_cb(lv_event_t *e)
     intptr_t idx = (intptr_t)lv_event_get_user_data(e);
     if (idx == MENU_ICON_TIMER) {
         timer_ui_show();
+        return;
+    }
+    if (idx == MENU_ICON_STOPWATCH) {
+        countdown_ui_show();
+        return;
+    }
+    if (idx == MENU_ICON_DEVICE) {
+        device_info_ui_show();
         return;
     }
 

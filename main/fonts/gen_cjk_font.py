@@ -9,7 +9,7 @@
 
 依赖:
     Node.js + lv_font_conv (npx lv_font_conv)
-    字体源: managed_components/lvgl__lvgl/scripts/built_in_font/SourceHanSansSC-Normal.otf
+    字体源: managed_components/lvgl__lvgl/scripts/generators/built_in_font/SourceHanSansSC-Normal.otf
 """
 import os
 import shutil
@@ -25,11 +25,13 @@ FONT_SOURCE = os.path.join(
     "managed_components",
     "lvgl__lvgl",
     "scripts",
+    "generators",
     "built_in_font",
     "SourceHanSansSC-Normal.otf",
 )
 OUTPUT_DIR = os.path.dirname(os.path.abspath(__file__))
 OUTPUT_FILE = os.path.join(OUTPUT_DIR, "lv_font_cjk_clock_18.c")
+FALLBACK_FONT = "lv_font_montserrat_20"
 
 # ---- 字符集定义 -------------------------------------------------------------
 # 二十四节气
@@ -54,11 +56,17 @@ TEMP_WIND = "温度度级风力"
 WEEKDAY = "星期周日一二三四五六天"
 DATETIME = "月份日年时分秒上午下午今明清前后节气气候物候季节春夏秋冬四季农历公历阳历阴历节日假日"
 
-# 计时器相关文字：计时器、未开始、计时中、已暂停、已停止、继续、清零
+# 计时器相关文字：状态和控制
 TIMER = "计时器未开始中暂停已停止继续清零"
 
+# 倒计时相关文字：设置倒计时、倒计时中、时间到、重新开始、重设、时分
+COUNTDOWN = "设置倒计时中暂停已继续时间到重新开始重设时分"
+
+# 设备信息相关文字：设备信息、芯片、核心、连接、闪存、内存、屏幕
+DEVICE_INFO = "设备信息芯片核心连接闪存内存屏幕"
+
 # 基本数字与符号，后面加个空格，避免字体生成时被 lv_font_conv 过滤掉
-BASIC = "加载中℃0123456789/-.· "
+BASIC = "加载中℃"
 
 # 合并并去重
 ALL_CHARS = (
@@ -73,6 +81,8 @@ ALL_CHARS = (
     + WEEKDAY
     + DATETIME
     + TIMER
+    + COUNTDOWN
+    + DEVICE_INFO
     + BASIC
 )
 # 去重并按 Unicode 排序
@@ -116,6 +126,7 @@ def main() -> int:
         "--format", "lvgl",
         "--no-compress",
         "--no-prefilter",
+        "--lv-fallback", FALLBACK_FONT,
         "--output", OUTPUT_FILE,
     ]
     # 用 --range 传码点区间，避免 shell 解析 Unicode

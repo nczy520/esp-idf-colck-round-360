@@ -8,6 +8,7 @@
 
 #include "app_config.h"
 #include "bsp_display.h"
+#include "clock_ui.h"
 
 extern const lv_image_dsc_t timer;
 extern const lv_image_dsc_t stopwatch;
@@ -138,6 +139,7 @@ void menu_ui_show(void)
         return;  /* 菜单已弹出 */
     }
     lvgl_port_lock(0);
+    clock_ui_pause();
 
     /* 1. 半透明背景遮罩：仅拦截触摸，菜单只能由中心按钮关闭 */
     lv_obj_t *dim = lv_obj_create(overlay);
@@ -150,7 +152,7 @@ void menu_ui_show(void)
     lv_obj_set_style_pad_all(dim, 0, 0);
     lv_obj_clear_flag(dim, LV_OBJ_FLAG_SCROLLABLE);
 
-    /* 2. 外层黑色圆环 */
+    /* 2. 不透明黑色圆环 */
     menu_root = lv_obj_create(overlay);
     lv_obj_set_size(menu_root, MENU_DIAMETER, MENU_DIAMETER);
     lv_obj_align(menu_root, LV_ALIGN_CENTER, 0, 0);
@@ -234,6 +236,7 @@ void menu_ui_hide(void)
     /* 删除 overlay 下的所有子节点（dim + menu_root） */
     lv_obj_clean(overlay);
     menu_root = NULL;
+    clock_ui_resume();
     lvgl_port_unlock();
     ESP_LOGI(TAG, "menu hidden");
 }

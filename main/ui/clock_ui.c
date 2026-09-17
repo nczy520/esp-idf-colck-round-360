@@ -5,6 +5,7 @@
 #include <time.h>
 
 #include "esp_lvgl_port.h"
+#include "esp_random.h"
 #include "lvgl.h"
 
 #include "bsp_display.h"
@@ -19,6 +20,8 @@ LV_FONT_DECLARE(lv_font_cjk_clock_18);
 /* Clock design tokens — matching LVGL 时钟表盘 design */
 #define CLOCK_FACE_SIZE          APP_LCD_H_RES
 #define CLOCK_CENTER             (CLOCK_FACE_SIZE / 2)
+#define CLOCK_DAY_INDICATOR_LENGTH_DEG 15
+#define CLOCK_DAY_INDICATOR_WIDTH       5
 #define CJK_FONT                 (&lv_font_cjk_clock_18)
 
 static lv_obj_t *date_label;
@@ -29,6 +32,8 @@ static lv_obj_t *time_period_label;
 static lv_obj_t *hour_hand;
 static lv_obj_t *minute_hand;
 static lv_obj_t *second_hand;
+static lv_obj_t *day_indicator;
+static lv_timer_t *clock_update_timer;
 static lv_point_precise_t hour_points[2];
 static lv_point_precise_t minute_points[2];
 static lv_point_precise_t second_points[2];
@@ -164,6 +169,27 @@ static void clock_update_cb(lv_timer_t *timer)
     update_clock_hand(minute_hand, minute_points, minute_angle, APP_CLOCK_MINUTE_HAND_LENGTH, 0);
     update_clock_hand(second_hand, second_points, second_angle,
                       APP_CLOCK_SECOND_HAND_LENGTH, APP_CLOCK_SECOND_TAIL_LENGTH);
+
+    int minute_of_day = current_time.tm_hour * 60 + current_time.tm_min;
+    int indicator_start_angle = minute_of_day * 360 / (24 * 60) - 90;
+    lv_arc_set_bg_angles(day_indicator, indicator_start_angle,
+                         indicator_start_angle + CLOCK_DAY_INDICATOR_LENGTH_DEG);
+    lv_obj_set_style_arc_color(day_indicator, lv_color_hex(esp_random() & 0xFFFFFF),
+                               LV_PART_MAIN);
+}
+
+void clock_ui_pause(void)
+{
+    if (clock_update_timer) {
+        lv_timer_pause(clock_update_timer);
+    }
+}
+
+void clock_ui_resume(void)
+{
+    if (clock_update_timer) {
+        lv_timer_resume(clock_update_timer);
+    }
 }
 
 esp_err_t clock_ui_create(void)
@@ -182,6 +208,20 @@ esp_err_t clock_ui_create(void)
     lv_obj_set_style_border_width(outer_ring, 1, 0);
     lv_obj_set_style_radius(outer_ring, LV_RADIUS_CIRCLE, 0);
     lv_obj_set_style_pad_all(outer_ring, 0, 0);
+
+    day_indicator = lv_arc_create(screen);
+    lv_obj_set_size(day_indicator, APP_CLOCK_RING_OUTER_RADIUS * 2,
+                    APP_CLOCK_RING_OUTER_RADIUS * 2);
+    lv_obj_align(day_indicator, LV_ALIGN_CENTER, 0, 0);
+    lv_arc_set_range(day_indicator, 0, 360);
+    lv_arc_set_value(day_indicator, 0);
+    lv_obj_remove_style(day_indicator, NULL, LV_PART_INDICATOR);
+    lv_obj_remove_style(day_indicator, NULL, LV_PART_KNOB);
+    lv_obj_set_style_arc_width(day_indicator, CLOCK_DAY_INDICATOR_WIDTH, LV_PART_MAIN);
+    lv_obj_set_style_arc_rounded(day_indicator, true, LV_PART_MAIN);
+    lv_obj_set_style_arc_opa(day_indicator, LV_OPA_COVER, LV_PART_MAIN);
+    lv_obj_set_style_bg_opa(day_indicator, LV_OPA_TRANSP, LV_PART_MAIN);
+    lv_obj_clear_flag(day_indicator, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);
 
     /* 内侧浅色填充：surface 35% 不透明度 */
     lv_obj_t *inner_fill = lv_obj_create(screen);
@@ -290,7 +330,7 @@ esp_err_t clock_ui_create(void)
     lv_obj_align(lunar_label, LV_ALIGN_TOP_MID, 0, APP_CLOCK_LUNAR_LABEL_Y);
 
     clock_update_cb(NULL);
-    lv_timer_create(clock_update_cb, 1000, NULL);
+    clock_update_timer = lv_timer_create(clock_update_cb, 1000, NULL);
 
     /* 在表盘之上安装长按菜单（需在表盘 UI 全部构建完成后调用） */
     menu_ui_init();

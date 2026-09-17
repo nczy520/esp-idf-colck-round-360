@@ -18,6 +18,16 @@ esp_err_t clock_ui_create(void);
  */
 void clock_ui_set_weather(const char *text);
 
+/**
+ * @brief 暂停表盘动画刷新。
+ */
+void clock_ui_pause(void);
+
+/**
+ * @brief 恢复表盘动画刷新。
+ */
+void clock_ui_resume(void);
+
 #ifdef __cplusplus
 }
 #endif

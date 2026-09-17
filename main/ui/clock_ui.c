@@ -171,7 +171,8 @@ static void clock_update_cb(lv_timer_t *timer)
                       APP_CLOCK_SECOND_HAND_LENGTH, APP_CLOCK_SECOND_TAIL_LENGTH);
 
     int minute_of_day = current_time.tm_hour * 60 + current_time.tm_min;
-    int indicator_start_angle = minute_of_day * 360 / (24 * 60) - 90;
+    int indicator_center_angle = minute_of_day * 360 / (24 * 60) - 90;
+    int indicator_start_angle = indicator_center_angle - CLOCK_DAY_INDICATOR_LENGTH_DEG / 2;
     lv_arc_set_bg_angles(day_indicator, indicator_start_angle,
                          indicator_start_angle + CLOCK_DAY_INDICATOR_LENGTH_DEG);
     lv_obj_set_style_arc_color(day_indicator, lv_color_hex(esp_random() & 0xFFFFFF),

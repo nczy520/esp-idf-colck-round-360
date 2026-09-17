@@ -114,7 +114,7 @@ static void style_button(lv_obj_t *button, lv_color_t color)
     lv_obj_set_style_border_width(button, 0, 0);
     lv_obj_set_style_bg_opa(button, LV_OPA_70, LV_STATE_PRESSED);
     lv_obj_set_style_opa(button, LV_OPA_40, LV_STATE_DISABLED);
-    lv_obj_clear_flag(button, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_scrollable(button, false);
 }
 
 static void run_clicked_cb(lv_event_t *event)
@@ -165,7 +165,6 @@ static void close_clicked_cb(lv_event_t *event)
     clear_button = NULL;
     run_button_label = NULL;
     state_label = NULL;
-    timer_state = TIMER_STATE_IDLE;
 }
 
 void timer_ui_show(void)
@@ -185,7 +184,7 @@ void timer_ui_show(void)
     lv_obj_set_style_border_width(timer_root, 2, 0);
     lv_obj_set_style_radius(timer_root, LV_RADIUS_CIRCLE, 0);
     lv_obj_set_style_pad_all(timer_root, 0, 0);
-    lv_obj_clear_flag(timer_root, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_scrollable(timer_root, false);
 
     lv_obj_t *dial_ring = lv_obj_create(timer_root);
     lv_obj_set_size(dial_ring, 286, 286);
@@ -195,7 +194,8 @@ void timer_ui_show(void)
     lv_obj_set_style_border_opa(dial_ring, LV_OPA_50, 0);
     lv_obj_set_style_border_width(dial_ring, 1, 0);
     lv_obj_set_style_radius(dial_ring, LV_RADIUS_CIRCLE, 0);
-    lv_obj_clear_flag(dial_ring, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_clickable(dial_ring, false);
+    lv_obj_set_scrollable(dial_ring, false);
 
     lv_obj_t *title = lv_label_create(timer_root);
     lv_label_set_text(title, "计时器");
@@ -210,24 +210,25 @@ void timer_ui_show(void)
     lv_obj_align(state_label, LV_ALIGN_TOP_MID, 0, 92);
 
     lv_obj_t *time_row = lv_obj_create(timer_root);
-    lv_obj_set_size(time_row, TIMER_WINDOW_SIZE - 12, 64);
-    lv_obj_align(time_row, LV_ALIGN_CENTER, 0, -4);
+    lv_obj_set_size(time_row, TIMER_WINDOW_SIZE - 12, 112);
+    lv_obj_align(time_row, LV_ALIGN_CENTER, 0, 0);
     lv_obj_set_style_bg_opa(time_row, LV_OPA_TRANSP, 0);
     lv_obj_set_style_border_width(time_row, 0, 0);
     lv_obj_set_style_pad_all(time_row, 0, 0);
-    lv_obj_clear_flag(time_row, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_clickable(time_row, false);
+    lv_obj_set_scrollable(time_row, false);
 
     time_label = lv_label_create(time_row);
-    lv_obj_set_size(time_label, 258, 64);
-    lv_obj_set_pos(time_label, 0, 4);
-    lv_obj_set_style_text_align(time_label, LV_TEXT_ALIGN_RIGHT, 0);
+    lv_obj_set_size(time_label, TIMER_WINDOW_SIZE - 12, 64);
+    lv_obj_set_pos(time_label, 0, 24);
+    lv_obj_set_style_text_align(time_label, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_set_style_text_color(time_label, lv_color_hex(TIMER_COLOR_TEXT), 0);
-    lv_obj_set_style_text_font(time_label, &lv_font_montserrat_40, 0);
+    lv_obj_set_style_text_font(time_label, &lv_font_montserrat_48, 0);
 
     milliseconds_label = lv_label_create(time_row);
-    lv_obj_set_size(milliseconds_label, 78, 28);
-    lv_obj_set_pos(milliseconds_label, 264, 25);
-    lv_obj_set_style_text_align(milliseconds_label, LV_TEXT_ALIGN_LEFT, 0);
+    lv_obj_set_size(milliseconds_label, TIMER_WINDOW_SIZE - 12, 28);
+    lv_obj_set_pos(milliseconds_label, 0, 80);
+    lv_obj_set_style_text_align(milliseconds_label, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_set_style_text_color(milliseconds_label, lv_color_hex(TIMER_COLOR_MUTED), 0);
     lv_obj_set_style_text_font(milliseconds_label, &lv_font_montserrat_20, 0);
 
@@ -274,8 +275,6 @@ void timer_ui_show(void)
     lv_obj_set_style_text_color(close_label, lv_color_hex(TIMER_COLOR_TEXT), 0);
     lv_obj_align(close_label, LV_ALIGN_CENTER, 0, 0);
 
-    elapsed_ms = 0;
-    timer_state = TIMER_STATE_IDLE;
     update_controls();
     update_time_label();
     refresh_timer = lv_timer_create(refresh_timer_cb, 10, NULL);

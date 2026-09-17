@@ -121,16 +121,14 @@ static void lvgl_port_touchpad_read(lv_indev_t *indev_drv, lv_indev_data_t *data
     assert(touch_ctx->handle);
 
     uint8_t touch_cnt = 0;
-    uint16_t touch_x[CONFIG_ESP_LCD_TOUCH_MAX_POINTS] = {0};
-    uint16_t touch_y[CONFIG_ESP_LCD_TOUCH_MAX_POINTS] = {0};
-    uint16_t touch_strength[CONFIG_ESP_LCD_TOUCH_MAX_POINTS] = {0};
+    esp_lcd_touch_point_data_t touch_points[CONFIG_ESP_LCD_TOUCH_MAX_POINTS] = {0};
 
     /* Read data from touch controller into memory */
     ESP_ERROR_CHECK(esp_lcd_touch_read_data(touch_ctx->handle));
 
-    /* Read data from touch controller */
-    bool touch_detected = esp_lcd_touch_get_coordinates(touch_ctx->handle, touch_x, touch_y, touch_strength,
-                                                        &touch_cnt, CONFIG_ESP_LCD_TOUCH_MAX_POINTS);
+    /* Read touch point data from the controller */
+    bool touch_detected = esp_lcd_touch_get_data(touch_ctx->handle, touch_points, &touch_cnt,
+                                                 CONFIG_ESP_LCD_TOUCH_MAX_POINTS) == ESP_OK;
 
 #if (CONFIG_ESP_LCD_TOUCH_MAX_POINTS > 1 && CONFIG_LV_USE_GESTURE_RECOGNITION)
     // Number of touch points which need to be constantly updated inside gesture recognizers
@@ -144,8 +142,8 @@ static void lvgl_port_touchpad_read(lv_indev_t *indev_drv, lv_indev_data_t *data
 
     for (int i = 0; i < touch_cnt && i < GESTURE_TOUCH_POINTS; i++) {
         touches[i].state = LV_INDEV_STATE_PRESSED;
-        touches[i].point.x = touch_ctx->scale.x * touch_x[i];
-        touches[i].point.y = touch_ctx->scale.y * touch_y[i];
+        touches[i].point.x = touch_ctx->scale.x * touch_points[i].x;
+        touches[i].point.y = touch_ctx->scale.y * touch_points[i].y;
         touches[i].id = i;
         touches[i].timestamp = esp_timer_get_time() / 1000;
     }
@@ -157,8 +155,8 @@ static void lvgl_port_touchpad_read(lv_indev_t *indev_drv, lv_indev_data_t *data
 #endif
 
     if (touch_detected && touch_cnt > 0) {
-        data->point.x = touch_ctx->scale.x * touch_x[0];
-        data->point.y = touch_ctx->scale.y * touch_y[0];
+        data->point.x = touch_ctx->scale.x * touch_points[0].x;
+        data->point.y = touch_ctx->scale.y * touch_points[0].y;
         data->state = LV_INDEV_STATE_PRESSED;
     } else {
         data->state = LV_INDEV_STATE_RELEASED;
